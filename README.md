@@ -10,4 +10,3 @@ Gonest is a Node.js application built with TypeScript, Express, and the Gonest f
 - **Cross-Origin Resource Sharing (CORS)**: Configured for secure API access.
 - **Global Exception Handling**: Ensures consistent error responses.
 
-## Project Structure
