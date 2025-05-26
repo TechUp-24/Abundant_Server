@@ -8,8 +8,7 @@ import { ForbiddenException } from "gonest";
 dotenv.config();
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
-const YOUTUBE_COOKIES_PATH = process.env.YOUTUBE_COOKIES_PATH; // Add this to your .env
-
+const YOUTUBE_COOKIES_PATH = process.env.YOUTUBE_COOKIES_PATH; // e.g., "./cookies.txt"
 
 console.log("OPENAI API KEY", OPENAI_API_KEY);
 
@@ -28,21 +27,24 @@ class PlanCreationService {
     console.log("YOUTUBE URL", youtubeUrl);
     console.log("YOUTUBE COOKIES PATH", YOUTUBE_COOKIES_PATH);
 
-
     const fileName = `audio-${Date.now()}.mp3`;
     const filePath = path.join("/tmp", fileName);
-    
+
     try {
       // Common options for all youtube-dl requests
-      const ytdlOptions = {
+      const ytdlOptions: any = {
         noWarnings: true,
         preferFreeFormats: true,
         noCheckCertificates: true,
         referer: youtubeUrl,
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        ...(YOUTUBE_COOKIES_PATH ? { cookies: YOUTUBE_COOKIES_PATH } : {}),
       };
+
+      // Only add cookies if provided
+      if (YOUTUBE_COOKIES_PATH) {
+        ytdlOptions.cookies = YOUTUBE_COOKIES_PATH;
+      }
 
       // Step 1: Get video metadata with retry logic
       const videoInfo = await this.getVideoInfoWithRetry(
@@ -76,17 +78,18 @@ class PlanCreationService {
       console.log("TRANSCRIPT", transcript);
 
       // Cleanup
-      unlinkSync(filePath);
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
 
-      // Step 4: Return result
       return {
         text: transcript.text,
       };
-    } catch (error) {
+    } catch (error: any) {
       if (filePath && existsSync(filePath)) {
         unlinkSync(filePath);
       }
-      console.error("Error in transcription:", error);
+      console.error("Error in transcription:", error?.message || error);
       throw error;
     }
   }
@@ -101,13 +104,15 @@ class PlanCreationService {
         ...options,
         dumpSingleJson: true,
       })) as VideoInfo;
-    } catch (error) {
+    } catch (error: any) {
       if (retries > 0) {
-        console.log(`Retrying... (${retries} attempts left)`);
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+        console.log(`Retrying... (${retries} attempts left):`, error.message);
+        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait before retry
         return this.getVideoInfoWithRetry(url, options, retries - 1);
       }
-      throw error;
+      throw new Error(
+        `Failed to fetch video info after 3 retries: ${error.message}`
+      );
     }
   }
 }
