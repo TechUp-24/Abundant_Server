@@ -25,6 +25,8 @@ class PlanCreationService {
     console.log("VIDEO URL", videoUrl);
     console.log("COOKIES PATH", COOKIES_PATH);
 
+    console.log("Cookies file found?", existsSync(COOKIES_PATH));
+
     const fileName = `audio-${Date.now()}.mp3`;
     const filePath = path.join("/tmp", fileName);
 
