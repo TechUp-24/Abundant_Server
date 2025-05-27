@@ -1,4 +1,4 @@
-import { createReadStream, unlinkSync, existsSync, readFileSync, writeFileSync } from "fs";
+import { createReadStream, unlinkSync, existsSync, readFileSync } from "fs";
 import path from "path";
 import ytdlp from "yt-dlp-exec";
 import OpenAI from "openai";
@@ -19,34 +19,16 @@ interface VideoInfo {
 }
 
 class PlanCreationService {
-  private getHardcodedCookies() {
-    return `
-# Netscape HTTP Cookie File
-.youtube.com	TRUE	/	TRUE	1763887886	DEVICE_INFO	ChxOelV3T1RBME5UUXhPRGN3TWpFME56QXdPQT09EI761cEGGIb61cEG
-.youtube.com	TRUE	/	TRUE	1748337677	GPS	1
-.youtube.com	TRUE	/	FALSE	0	PREF	hl=en&tz=UTC
-.youtube.com	TRUE	/	TRUE	0	SOCS	CAI
-.youtube.com	TRUE	/	TRUE	1763887886	VISITOR_INFO1_LIVE	mvuE3iefNdY
-.youtube.com	TRUE	/	TRUE	1763887886	VISITOR_PRIVACY_METADATA	CgJQSxIEGgAgSg%3D%3D
-.youtube.com	TRUE	/	TRUE	0	YSC	YG8RSsufHpA
-.youtube.com	TRUE	/	TRUE	1763887878	__Secure-ROLLOUT_TOKEN	CPHcy7TnwtmkRhCCvKXXosONAxiw79PXosONAw%3D%3D
-.youtube.com	TRUE	/	TRUE	1811407886	__Secure-YT_TVFAS	t=485648&s=2
-    `.trim();
-  }
-
-  private async getCookiesTempFile() {
-    const tempPath = path.join("/tmp", `cookies-${Date.now()}.txt`);
-    writeFileSync(tempPath, this.getHardcodedCookies());
-    return tempPath;
-  }
-
   async transcribe(videoUrl: string) {
     console.log("VIDEO URL:", videoUrl);
+    console.log("COOKIES PATH:", COOKIES_PATH);
+    console.log("Cookies file exists:", existsSync(COOKIES_PATH));
+
+    if (existsSync(COOKIES_PATH)) {
+      console.log("Cookies file content:", readFileSync(COOKIES_PATH, "utf-8"));
+    }
 
     const filePath = path.join("/tmp", `audio-${Date.now()}.mp3`);
-    const cookiesPath = await this.getCookiesTempFile();
-
-    console.log("COOKIES PATH:", cookiesPath);
 
     const ytdlpOptions: any = {
       noWarnings: true,
@@ -55,7 +37,7 @@ class PlanCreationService {
       referer: videoUrl,
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      cookies: cookiesPath,
+      cookies: COOKIES_PATH,
       addHeader: [
         "referer:youtube.com",
         "user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
