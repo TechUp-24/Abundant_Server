@@ -21,7 +21,7 @@ interface VideoInfo {
 class PlanCreationService {
   async transcribe(videoUrl: string) {
     console.log("VIDEO URL:", videoUrl);
-    console.log("COOKIES PATH:", COOKIES_PATH);
+    console.log("COOKIES PATH:", '../cookies/cookies.txt');
     console.log("Cookies file exists:", existsSync(COOKIES_PATH));
 
     if (existsSync(COOKIES_PATH)) {
@@ -37,7 +37,7 @@ class PlanCreationService {
       referer: videoUrl,
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      cookies: COOKIES_PATH,
+      cookies: '../cookies/cookies.txt',
       addHeader: [
         "referer:youtube.com",
         "user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
