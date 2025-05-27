@@ -3,9 +3,12 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "gonest": "^1.0.26",
+    "i": "^0.3.7",
+    "npm": "^11.4.1",
     "openai": "^4.97.0",
     "typescript": "^5.8.3",
-    "youtube-dl-exec": "^3.0.20"
+    "youtube-dl-exec": "^3.0.20",
+    "yt-dlp-exec": "^1.0.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

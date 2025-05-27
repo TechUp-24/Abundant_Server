@@ -1,6 +1,6 @@
 import { createReadStream, unlinkSync, existsSync } from "fs";
 import path from "path";
-import youtubedl from "youtube-dl-exec";
+import ytdlp from "yt-dlp-exec"; // ⬅️ NEW PACKAGE
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import { ForbiddenException } from "gonest";
@@ -8,9 +8,7 @@ import { ForbiddenException } from "gonest";
 dotenv.config();
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
-const YOUTUBE_COOKIES_PATH = process.env.YOUTUBE_COOKIES_PATH; // e.g., "./cookies.txt"
-
-console.log("OPENAI API KEY", OPENAI_API_KEY);
+const COOKIES_PATH = '../../cookies.txt'; // works for IG too
 
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
@@ -23,35 +21,32 @@ interface VideoInfo {
 class PlanCreationService {
   constructor() {}
 
-  async transcribe(youtubeUrl: string) {
-    console.log("YOUTUBE URL", youtubeUrl);
-    console.log("YOUTUBE COOKIES PATH", YOUTUBE_COOKIES_PATH);
+  async transcribe(videoUrl: string) {
+    console.log("VIDEO URL", videoUrl);
+    console.log("COOKIES PATH", COOKIES_PATH);
 
     const fileName = `audio-${Date.now()}.mp3`;
     const filePath = path.join("/tmp", fileName);
 
     try {
-      // Common options for all youtube-dl requests
-      const ytdlOptions: any = {
+      const ytdlpOptions: any = {
         noWarnings: true,
         preferFreeFormats: true,
         noCheckCertificates: true,
-        referer: youtubeUrl,
+        referer: videoUrl,
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
       };
 
-      // Only add cookies if provided
-      if (YOUTUBE_COOKIES_PATH) {
-        ytdlOptions.cookies = YOUTUBE_COOKIES_PATH;
+      if (COOKIES_PATH) {
+        ytdlpOptions.cookies = COOKIES_PATH;
       }
 
-      // Step 1: Get video metadata with retry logic
+      // Step 1: Get video metadata
       const videoInfo = await this.getVideoInfoWithRetry(
-        youtubeUrl,
-        ytdlOptions
+        videoUrl,
+        ytdlpOptions
       );
-
       console.log("VIDEO INFO", videoInfo);
 
       const { title, description } = videoInfo;
@@ -60,14 +55,14 @@ class PlanCreationService {
       }
 
       // Step 2: Download audio
-      await youtubedl(youtubeUrl, {
-        ...ytdlOptions,
+      await ytdlp(videoUrl, {
+        ...ytdlpOptions,
         extractAudio: true,
         audioFormat: "mp3",
         output: filePath,
       });
 
-      // Step 3: Transcribe with Whisper
+      // Step 3: Transcribe audio
       const audioStream = createReadStream(filePath);
       const transcript = await openai.audio.transcriptions.create({
         file: audioStream,
@@ -77,7 +72,6 @@ class PlanCreationService {
 
       console.log("TRANSCRIPT", transcript);
 
-      // Cleanup
       if (existsSync(filePath)) {
         unlinkSync(filePath);
       }
@@ -86,7 +80,7 @@ class PlanCreationService {
         text: transcript.text,
       };
     } catch (error: any) {
-      if (filePath && existsSync(filePath)) {
+      if (existsSync(filePath)) {
         unlinkSync(filePath);
       }
       console.error("Error in transcription:", error?.message || error);
@@ -100,18 +94,18 @@ class PlanCreationService {
     retries = 3
   ): Promise<VideoInfo> {
     try {
-      return (await youtubedl(url, {
+      return (await ytdlp(url, {
         ...options,
         dumpSingleJson: true,
       })) as VideoInfo;
     } catch (error: any) {
       if (retries > 0) {
         console.log(`Retrying... (${retries} attempts left):`, error.message);
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait before retry
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return this.getVideoInfoWithRetry(url, options, retries - 1);
       }
       throw new Error(
-        `Failed to fetch video info after 3 retries: ${error.message}`
+        `Failed to fetch video info after retries: ${error.message}`
       );
     }
   }
