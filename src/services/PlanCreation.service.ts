@@ -77,6 +77,8 @@ class PlanCreationService {
         unlinkSync(filePath);
       }
 
+      console.log("All the things perfectly working")
+
       return {
         text: transcript.text,
       };

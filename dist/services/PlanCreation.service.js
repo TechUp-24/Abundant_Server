@@ -64,6 +64,7 @@ class PlanCreationService {
                 if ((0, fs_1.existsSync)(filePath)) {
                     (0, fs_1.unlinkSync)(filePath);
                 }
+                console.log("All the things perfectly working");
                 return {
                     text: transcript.text,
                 };
