@@ -1,7 +1,7 @@
 import { BadRequestException, InternalServerErrorException } from "gonest";
 import fs from "fs";
 import path from "path";
-import { exec } from "child_process";
+import { execSync } from "child_process";
 
 class CookiesService {
   constructor() {}
@@ -73,25 +73,18 @@ class CookiesService {
   private async runBuildCommand(): Promise<void> {
     const projectDir = path.join(__dirname, "..", ".."); // Root of project
 
-    const runCommand = (cmd: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        exec(cmd, { cwd: projectDir }, (error, stdout, stderr) => {
-          if (error) {
-            console.error(`Error executing command: ${cmd}`, error);
-            return reject(error);
-          }
-          if (stderr) {
-            console.warn(`stderr for ${cmd}:`, stderr);
-          }
-          console.log(`stdout for ${cmd}:`, stdout);
-          resolve();
-        });
-      });
+    const runCommand = (cmd: string): void => {
+      try {
+        execSync(cmd, { cwd: projectDir });
+      } catch (error) {
+        console.error(`Error executing command: ${cmd}`, error);
+        throw new Error(`Build failed: ${error}`);
+      }
     };
 
     try {
       console.log("Running build command...");
-      await runCommand("npm run build");
+      runCommand("npm run build");
     } catch (err) {
       throw new Error(`Build failed: ${err}`);
     }
@@ -100,26 +93,34 @@ class CookiesService {
   private async runGitCommands(): Promise<void> {
     const gitDir = path.join(__dirname, "..", ".."); // Root of git repo
 
-    const runCommand = (cmd: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        exec(cmd, { cwd: gitDir }, (error, stdout, stderr) => {
-          if (error) {
-            console.error(`Error executing command: ${cmd}`, error);
-            return reject(error);
-          }
-          if (stderr) {
-            console.warn(`stderr for ${cmd}:`, stderr);
-          }
-          console.log(`stdout for ${cmd}:`, stdout);
-          resolve();
-        });
-      });
+    const runCommand = (cmd: string): void => {
+      try {
+        execSync(cmd, { cwd: gitDir });
+      } catch (error) {
+        console.error(`Error executing command: ${cmd}`, error);
+        throw new Error(`Git operation failed: ${error}`);
+      }
     };
-    const timestamp = new Date().toISOString();
+
     try {
-      await runCommand("git add .");
-      await runCommand(`git commit -m "updated cookies at [${timestamp}]"`);
-      await runCommand("git push origin main");
+      runCommand("git add .");
+
+      const now = new Date();
+      const formattedTime = now.toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+
+      // Extract only date and time without seconds
+      const [dateAndTime] = formattedTime.split(", ");
+      const commitMessage = `updated cookies at [${dateAndTime}]`;
+
+      runCommand(`git commit -m "${commitMessage}"`);
+      runCommand("git push origin main");
     } catch (err) {
       throw new Error(`Git operation failed: ${err}`);
     }

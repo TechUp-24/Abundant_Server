@@ -77,23 +77,17 @@ class CookiesService {
         return __awaiter(this, void 0, void 0, function* () {
             const projectDir = path_1.default.join(__dirname, "..", ".."); // Root of project
             const runCommand = (cmd) => {
-                return new Promise((resolve, reject) => {
-                    (0, child_process_1.exec)(cmd, { cwd: projectDir }, (error, stdout, stderr) => {
-                        if (error) {
-                            console.error(`Error executing command: ${cmd}`, error);
-                            return reject(error);
-                        }
-                        if (stderr) {
-                            console.warn(`stderr for ${cmd}:`, stderr);
-                        }
-                        console.log(`stdout for ${cmd}:`, stdout);
-                        resolve();
-                    });
-                });
+                try {
+                    (0, child_process_1.execSync)(cmd, { cwd: projectDir });
+                }
+                catch (error) {
+                    console.error(`Error executing command: ${cmd}`, error);
+                    throw new Error(`Build failed: ${error}`);
+                }
             };
             try {
                 console.log("Running build command...");
-                yield runCommand("npm run build");
+                runCommand("npm run build");
             }
             catch (err) {
                 throw new Error(`Build failed: ${err}`);
@@ -104,25 +98,30 @@ class CookiesService {
         return __awaiter(this, void 0, void 0, function* () {
             const gitDir = path_1.default.join(__dirname, "..", ".."); // Root of git repo
             const runCommand = (cmd) => {
-                return new Promise((resolve, reject) => {
-                    (0, child_process_1.exec)(cmd, { cwd: gitDir }, (error, stdout, stderr) => {
-                        if (error) {
-                            console.error(`Error executing command: ${cmd}`, error);
-                            return reject(error);
-                        }
-                        if (stderr) {
-                            console.warn(`stderr for ${cmd}:`, stderr);
-                        }
-                        console.log(`stdout for ${cmd}:`, stdout);
-                        resolve();
-                    });
-                });
+                try {
+                    (0, child_process_1.execSync)(cmd, { cwd: gitDir });
+                }
+                catch (error) {
+                    console.error(`Error executing command: ${cmd}`, error);
+                    throw new Error(`Git operation failed: ${error}`);
+                }
             };
-            const timestamp = new Date().toISOString();
             try {
-                yield runCommand("git add .");
-                yield runCommand(`git commit -m "updated cookies at [${timestamp}]"`);
-                yield runCommand("git push origin main");
+                runCommand("git add .");
+                const now = new Date();
+                const formattedTime = now.toLocaleString("en-US", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                });
+                // Extract only date and time without seconds
+                const [dateAndTime] = formattedTime.split(", ");
+                const commitMessage = `updated cookies at [${dateAndTime}]`;
+                runCommand(`git commit -m "${commitMessage}"`);
+                runCommand("git push origin main");
             }
             catch (err) {
                 throw new Error(`Git operation failed: ${err}`);
