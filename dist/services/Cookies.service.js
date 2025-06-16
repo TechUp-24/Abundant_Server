@@ -118,9 +118,10 @@ class CookiesService {
                     });
                 });
             };
+            const timestamp = new Date().toISOString();
             try {
                 yield runCommand("git add .");
-                yield runCommand('git commit -m "updated cookies"');
+                yield runCommand(`git commit -m "updated cookies at [${timestamp}]"`);
                 yield runCommand("git push origin main");
             }
             catch (err) {

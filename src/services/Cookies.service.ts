@@ -115,10 +115,10 @@ class CookiesService {
         });
       });
     };
-
+    const timestamp = new Date().toISOString();
     try {
       await runCommand("git add .");
-      await runCommand('git commit -m "updated cookies"');
+      await runCommand(`git commit -m "updated cookies at [${timestamp}]"`);
       await runCommand("git push origin main");
     } catch (err) {
       throw new Error(`Git operation failed: ${err}`);
