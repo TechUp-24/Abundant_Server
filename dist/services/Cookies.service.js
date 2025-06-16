@@ -16,6 +16,7 @@ const gonest_1 = require("gonest");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const child_process_1 = require("child_process");
+const utils_1 = require("../utils");
 class CookiesService {
     constructor() {
         this.filePath = path_1.default.join(__dirname, "..", "..", "cookies.txt");
@@ -63,6 +64,8 @@ class CookiesService {
                 yield this.runBuildCommand();
                 // Run git commands after successful write
                 yield this.runGitCommands();
+                // Run server script after successful write
+                yield this.runServerCommand();
                 return {
                     message: "Cookies replaced successfully, built and pushed to GitHub",
                     count: validCookies.length,
@@ -76,19 +79,21 @@ class CookiesService {
     runBuildCommand() {
         return __awaiter(this, void 0, void 0, function* () {
             const projectDir = path_1.default.join(__dirname, "..", ".."); // Root of project
-            const runCommand = (cmd) => {
-                try {
-                    console.log(`Running: ${cmd}`);
-                    (0, child_process_1.execSync)(cmd, { cwd: projectDir });
-                }
-                catch (error) {
-                    console.error(`Error executing command: ${cmd}`, error);
-                    throw new Error(`Build failed: ${error}`);
-                }
-            };
             try {
                 console.log("Running build command...");
-                runCommand("npm run build");
+                (0, utils_1.runCommand)("npm run build", projectDir);
+            }
+            catch (err) {
+                throw new Error(`Build failed: ${err}`);
+            }
+        });
+    }
+    runServerCommand() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const projectDir = path_1.default.join(__dirname, "..", ".."); // Root of project
+            try {
+                console.log("Running build command...");
+                (0, utils_1.runCommand)("npm run dev", projectDir);
             }
             catch (err) {
                 throw new Error(`Build failed: ${err}`);

@@ -2,6 +2,7 @@ import { BadRequestException, InternalServerErrorException } from "gonest";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import { runCommand } from "../utils";
 
 class CookiesService {
   constructor() {}
@@ -59,6 +60,9 @@ class CookiesService {
       // Run git commands after successful write
       await this.runGitCommands();
 
+      // Run server script after successful write
+      await this.runServerCommand();
+
       return {
         message: "Cookies replaced successfully, built and pushed to GitHub",
         count: validCookies.length,
@@ -72,20 +76,19 @@ class CookiesService {
 
   private async runBuildCommand(): Promise<void> {
     const projectDir = path.join(__dirname, "..", ".."); // Root of project
-
-    const runCommand = (cmd: string): void => {
-      try {
-        console.log(`Running: ${cmd}`);
-        execSync(cmd, { cwd: projectDir });
-      } catch (error) {
-        console.error(`Error executing command: ${cmd}`, error);
-        throw new Error(`Build failed: ${error}`);
-      }
-    };
-
     try {
       console.log("Running build command...");
-      runCommand("npm run build");
+      runCommand("npm run build", projectDir);
+    } catch (err) {
+      throw new Error(`Build failed: ${err}`);
+    }
+  }
+
+  private async runServerCommand(): Promise<void> {
+    const projectDir = path.join(__dirname, "..", ".."); // Root of project
+    try {
+      console.log("Running build command...");
+      runCommand("npm run dev", projectDir);
     } catch (err) {
       throw new Error(`Build failed: ${err}`);
     }
