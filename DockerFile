@@ -1,10 +1,21 @@
+# Use official Node.js image
 FROM node:18
 
-# Install Python and FFmpeg
-RUN apt-get update && apt-get install -y python3 ffmpeg
+# Update and install required system packages including git (if needed)
+RUN apt-get update && apt-get install -y python3 ffmpeg git && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
-COPY . .
+
+# Copy only package.json and install deps first (better layering/cache)
+COPY package*.json ./
 RUN npm ci
 
+# Copy rest of the project
+COPY . .
+
+# Optional: Debugging line
+RUN ls -la  # Make sure cookies.txt is here
+
+# Start the app
 CMD ["npm", "run", "start"]

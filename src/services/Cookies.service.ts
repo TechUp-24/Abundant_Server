@@ -53,17 +53,47 @@ class CookiesService {
       // Overwrite the file
       fs.writeFileSync(this.filePath, dataToWrite);
 
+      // Run build script before git commands
+      await this.runBuildCommand();
+
       // Run git commands after successful write
       await this.runGitCommands();
 
       return {
-        message: "Cookies replaced successfully and pushed to GitHub",
+        message: "Cookies replaced successfully, built and pushed to GitHub",
         count: validCookies.length,
       };
     } catch (err) {
       throw new InternalServerErrorException(
-        `Failed to write or push cookies: ${err}`
+        `Failed to write, build or push cookies: ${err}`
       );
+    }
+  }
+
+  private async runBuildCommand(): Promise<void> {
+    const projectDir = path.join(__dirname, "..", ".."); // Root of project
+
+    const runCommand = (cmd: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        exec(cmd, { cwd: projectDir }, (error, stdout, stderr) => {
+          if (error) {
+            console.error(`Error executing command: ${cmd}`, error);
+            return reject(error);
+          }
+          if (stderr) {
+            console.warn(`stderr for ${cmd}:`, stderr);
+          }
+          console.log(`stdout for ${cmd}:`, stdout);
+          resolve();
+        });
+      });
+    };
+
+    try {
+      console.log("Running build command...");
+      await runCommand("npm run build");
+    } catch (err) {
+      throw new Error(`Build failed: ${err}`);
     }
   }
 
