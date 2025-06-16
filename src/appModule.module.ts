@@ -1,5 +1,9 @@
-import { GonestFactory, LoggerMessage } from "gonest";
-import { DemoController, PlanCreationController } from "./controllers";
+import { GonestFactory } from "gonest";
+import {
+  CookiesController,
+  DemoController,
+  PlanCreationController,
+} from "./controllers";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -7,7 +11,7 @@ dotenv.config();
 export function Invest() {
   // Define the application module with controllers and global prefix
   const appModule = {
-    controllers: [DemoController, PlanCreationController],
+    controllers: [DemoController, PlanCreationController, CookiesController],
     globalPrefix: "api/v1",
   };
 
