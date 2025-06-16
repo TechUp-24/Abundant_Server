@@ -19,7 +19,7 @@ function Invest() {
     app.setApplicationName("Gonest");
     // Enable Cross-Origin Resource Sharing
     app.enableCors({
-        origin: "http://localhost:3000",
+        origin: ["http://localhost:3000", "https://www.abundantvisas.com"],
         methods: ["GET", "POST", "PUT", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,

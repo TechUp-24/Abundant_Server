@@ -27,11 +27,11 @@ class CookiesService {
     for (const line of cookies) {
       if (typeof line !== "string") continue;
       if (line.trim() === "") continue;
-      if (line.startsWith("#")) continue; // Skip comments from input
+      if (line.startsWith("#")) continue; // Skip comments
 
       const parts = line.split("\t");
 
-      // Netscape cookie spec requires at least 7 fields
+      // Must have at least 7 tab-separated fields
       if (parts.length < 7) continue;
 
       // Validate expiry timestamp
@@ -75,6 +75,7 @@ class CookiesService {
 
     const runCommand = (cmd: string): void => {
       try {
+        console.log(`Running: ${cmd}`);
         execSync(cmd, { cwd: projectDir });
       } catch (error) {
         console.error(`Error executing command: ${cmd}`, error);
@@ -91,18 +92,41 @@ class CookiesService {
   }
 
   private async runGitCommands(): Promise<void> {
-    const gitDir = path.join(__dirname, "..", ".."); // Root of git repo
+    const gitDir = path.join(__dirname, "..", ".."); // Project root
 
     const runCommand = (cmd: string): void => {
+      console.log(`Executing: ${cmd}`);
       try {
-        execSync(cmd, { cwd: gitDir });
+        execSync(cmd, { cwd: gitDir, stdio: "inherit" });
       } catch (error) {
         console.error(`Error executing command: ${cmd}`, error);
         throw new Error(`Git operation failed: ${error}`);
       }
     };
 
+    console.log("Current dir:", process.cwd());
+    console.log("Git dir:", gitDir);
+
+    if (!fs.existsSync(path.join(gitDir, ".git"))) {
+      throw new Error("Git repository not found (.git folder missing)");
+    }
+
     try {
+      // Set Git user/email
+      runCommand("git config --global user.email 'uhope1645@gmail.com'");
+      runCommand("git config --global user.name 'asad-ali-developer'");
+
+      // Optional: Update remote URL with token
+      const token = process.env.GITHUB_TOKEN;
+      console.log("GITHUB_TOKEN:", token);
+      if (token) {
+        const repoUrl = `https://github.com/asad-ali-developer/Abundant_Server.git`;
+        const authRepoUrl = repoUrl.replace("https://", `https://${token}@`);
+
+        runCommand(`git remote set-url origin ${authRepoUrl}`);
+      }
+
+      // Run Git operations
       runCommand("git add .");
 
       const now = new Date();
@@ -115,7 +139,6 @@ class CookiesService {
         hour12: true,
       });
 
-      // Extract only date and time without seconds
       const [dateAndTime] = formattedTime.split(", ");
       const commitMessage = `updated cookies at [${dateAndTime}]`;
 
