@@ -120,7 +120,7 @@ class CookiesService {
       const token = process.env.GITHUB_TOKEN;
       console.log("GITHUB_TOKEN:", token);
       if (token) {
-        const repoUrl = `https://github.com/asad-ali-developer/Abundant_Server.git`;
+        const repoUrl = `https://github.com/TechUp-24/Abundant_Server.git`;
         const authRepoUrl = repoUrl.replace("https://", `https://${token}@`);
 
         runCommand(`git remote set-url origin ${authRepoUrl}`);
