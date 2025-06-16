@@ -1,14 +1,19 @@
-import { createReadStream, unlinkSync, existsSync, readFileSync } from "fs";
+import { createReadStream, writeFileSync, unlinkSync } from "fs";
 import path from "path";
 import ytdlp from "yt-dlp-exec";
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import axios from "axios";
 import { ForbiddenException } from "gonest";
+import fs from "fs";
 
+// Load environment variables
 dotenv.config();
 
+// Configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY!;
-const COOKIES_PATH = path.resolve(process.env.YOUTUBE_COOKIES_PATH || "");
+const TEMP_COOKIES_PATH = path.join("/tmp", "cookies.txt");
+const FIREBASE_COOKIES_URL = process.env.FIREBASE_COOKIES_URL!;
 
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
@@ -20,13 +25,17 @@ interface VideoInfo {
 
 class PlanCreationService {
   async transcribe(videoUrl: string) {
-    console.log("VIDEO URL:", videoUrl);
-    console.log("COOKIES PATH:", COOKIES_PATH);
-    console.log("Cookies file exists:", existsSync(COOKIES_PATH));
-
-    if (existsSync(COOKIES_PATH)) {
-      console.log("Cookies file content:", readFileSync(COOKIES_PATH, "utf-8"));
+    if (!FIREBASE_COOKIES_URL) {
+      throw new ForbiddenException("Firebase cookie URL not configured");
     }
+
+    // Step 1: Download cookies from Firebase
+    const cookies = await this.downloadCookiesFromFirebase();
+
+    // Step 2: Write to tmp file
+    writeFileSync(TEMP_COOKIES_PATH, cookies);
+
+    console.log("✅ Cookies downloaded and saved to:", TEMP_COOKIES_PATH);
 
     const filePath = path.join("/tmp", `audio-${Date.now()}.mp3`);
 
@@ -37,7 +46,7 @@ class PlanCreationService {
       referer: videoUrl,
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      cookies: COOKIES_PATH,
+      cookies: TEMP_COOKIES_PATH,
       addHeader: [
         "referer:youtube.com",
         "user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -46,19 +55,19 @@ class PlanCreationService {
     };
 
     try {
-      // Step 1: Get video metadata
+      // Step 3: Get video metadata
       const videoInfo = await this.getVideoInfoWithRetry(
         videoUrl,
         ytdlpOptions
       );
-      console.log("VIDEO INFO:", videoInfo);
 
       const { title, description } = videoInfo;
+
       if (!title || !description) {
         throw new ForbiddenException("Invalid video metadata");
       }
 
-      // Step 2: Download audio
+      // Step 4: Download audio
       await ytdlp(videoUrl, {
         ...ytdlpOptions,
         extractAudio: true,
@@ -66,32 +75,48 @@ class PlanCreationService {
         output: filePath,
       });
 
-      // Step 3: Transcribe audio using OpenAI Whisper
+      // Step 5: Transcribe using Whisper
       const transcript = await openai.audio.transcriptions.create({
         file: createReadStream(filePath),
         model: "whisper-1",
         language: "en",
       });
 
+      // Step 6: Cleanup
       if (existsSync(filePath)) {
         unlinkSync(filePath);
       }
 
-      console.log("All the things perfectly working")
+      console.log("🎉 All steps completed successfully!");
 
       return {
         text: transcript.text,
       };
     } catch (error: any) {
+      console.error("🚨 Error during transcription:", error.message);
+      console.error("Error details:", error.stderr || error.stdout || "None");
+
       if (existsSync(filePath)) {
         unlinkSync(filePath);
       }
-      console.error("Transcription error:", error.message || error);
-      console.error(
-        "Error details:",
-        error.stderr || error.stdout || "No additional details"
-      );
+
       throw error;
+    }
+  }
+
+  private async downloadCookiesFromFirebase(): Promise<string> {
+    console.log("🔄 Downloading cookies from Firebase...");
+
+    try {
+      const response = await axios.get(FIREBASE_COOKIES_URL, {
+        responseType: "text",
+      });
+
+      console.log("✅ Successfully fetched cookies from Firebase");
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to fetch cookies from Firebase:", error.message);
+      throw new ForbiddenException("Failed to fetch cookies from Firebase");
     }
   }
 
@@ -100,24 +125,34 @@ class PlanCreationService {
     options: any,
     retries = 3
   ): Promise<VideoInfo> {
-    try {
-      return (await ytdlp(url, {
-        ...options,
-        dumpSingleJson: true,
-      })) as VideoInfo;
-    } catch (error: any) {
-      if (retries > 0) {
-        console.warn(`Retrying video info (${retries} left): ${error.message}`);
+    while (retries > 0) {
+      try {
+        return (await ytdlp(url, {
+          ...options,
+          dumpSingleJson: true,
+        })) as VideoInfo;
+      } catch (error: any) {
         console.warn(
-          `Error details: ${error.stderr || error.stdout || "No details"}`
+          `🔁 Retrying video info (${retries} left): ${error.message}`
         );
+        console.warn("Error details:", error.stderr || error.stdout || "None");
+
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        return this.getVideoInfoWithRetry(url, options, retries - 1);
+        retries--;
       }
-      throw new Error(
-        `Failed to fetch video info after retries: ${error.message}\n${error.stderr || ""}`
-      );
     }
+
+    throw new Error("Failed to fetch video info after retries");
+  }
+}
+
+// Helper functions outside class for clarity
+function existsSync(path: string): boolean {
+  try {
+    fs.statSync(path);
+    return true;
+  } catch {
+    return false;
   }
 }
 
