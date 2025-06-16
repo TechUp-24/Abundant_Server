@@ -65,7 +65,7 @@ class CookiesService {
                 // Run git commands after successful write
                 yield this.runGitCommands();
                 // Run server script after successful write
-                yield this.runServerCommand();
+                //   await this.runServerCommand();
                 return {
                     message: "Cookies replaced successfully, built and pushed to GitHub",
                     count: validCookies.length,

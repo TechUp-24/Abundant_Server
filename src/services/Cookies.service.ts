@@ -61,7 +61,7 @@ class CookiesService {
       await this.runGitCommands();
 
       // Run server script after successful write
-      await this.runServerCommand();
+    //   await this.runServerCommand();
 
       return {
         message: "Cookies replaced successfully, built and pushed to GitHub",
