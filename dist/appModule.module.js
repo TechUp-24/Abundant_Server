@@ -12,7 +12,12 @@ dotenv_1.default.config();
 function Invest() {
     // Define the application module with controllers and global prefix
     const appModule = {
-        controllers: [controllers_1.DemoController, controllers_1.PlanCreationController, controllers_1.CookiesController],
+        controllers: [
+            controllers_1.DemoController,
+            controllers_1.PlanCreationController,
+            controllers_1.CookiesController,
+            controllers_1.ChatbotController,
+        ],
         globalPrefix: "api/v1",
     };
     const app = gonest_1.GonestFactory.create(appModule);
@@ -20,7 +25,7 @@ function Invest() {
     // Enable Cross-Origin Resource Sharing
     app.enableCors({
         origin: ["http://localhost:3000", "https://www.abundantvisas.com"],
-        methods: ["GET", "POST", "PUT", "DELETE"],
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
     });
