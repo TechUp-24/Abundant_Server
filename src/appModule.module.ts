@@ -1,5 +1,6 @@
 import { GonestFactory } from "gonest";
 import {
+  ChatbotController,
   CookiesController,
   DemoController,
   PlanCreationController,
@@ -11,7 +12,12 @@ dotenv.config();
 export function Invest() {
   // Define the application module with controllers and global prefix
   const appModule = {
-    controllers: [DemoController, PlanCreationController, CookiesController],
+    controllers: [
+      DemoController,
+      PlanCreationController,
+      CookiesController,
+      ChatbotController,
+    ],
     globalPrefix: "api/v1",
   };
 
@@ -22,7 +28,7 @@ export function Invest() {
   // Enable Cross-Origin Resource Sharing
   app.enableCors({
     origin: ["http://localhost:3000", "https://www.abundantvisas.com"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   });

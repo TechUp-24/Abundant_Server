@@ -74,6 +74,8 @@ class PlanCreationService {
                 console.log("🎉 All steps completed successfully!");
                 return {
                     text: transcript.text,
+                    title,
+                    description,
                 };
             }
             catch (error) {

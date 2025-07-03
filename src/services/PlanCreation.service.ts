@@ -91,6 +91,8 @@ class PlanCreationService {
 
       return {
         text: transcript.text,
+        title,
+        description,
       };
     } catch (error: any) {
       console.error("🚨 Error during transcription:", error.message);
